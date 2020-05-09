@@ -1,9 +1,8 @@
-#include <Arduino.h>
+#include <ArduinoSTL.h>
 #include <PS2Keyboard.h>
-#include<StandardCplusplus.h>
 #include<string>
-#include<vector>
 #include<map>
+
 
 const int DataPin = 3;
 const int IRQpin =  5;
@@ -12,22 +11,22 @@ PS2Keyboard keyboard;
 
 std::vector<char> inputQueue;
 
-std::map<char,std::string> Dicitonary;
+std::map<char, std::string> Dicitonary;
 
 
-void setup() 
+void setup()
 {
-  SetDictionary();  
+  SetDictionary();
   delay(1000);
-  attachInterrupt(digitalPinToInterrupt(DataPin),InputInterupt, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(DataPin), InputInterupt, CHANGE);
   keyboard.begin(DataPin, IRQpin);
   Serial.begin(9600);
 }
 
-void loop() 
+void loop()
 {
   delay(20);
-  if (inputQueue.size()>0)
+  if (inputQueue.size() > 0)
   {
     char toTranslateChar = inputQueue[0];
     std::string outputMorse = TranslateToMorse(toTranslateChar);
@@ -50,7 +49,7 @@ void InputInterupt()
 
 std::string TranslateToMorse(char input)
 {
-  return Dicitonary[input];  
+  return Dicitonary[input];
 }
 
 
@@ -60,18 +59,18 @@ void SerialOutput(char currentChar, std::string translation)
   Serial.print("Char: ");
   Serial.print(currentChar);
   Serial.print(" Translation: ");
-  Serial.print(translation.data);
+  Serial.print(translation.c_str());
   Serial.println();
 }
 
 void SoundOutput(std::string translation)
 {
-  for (size_t i = 0; i < translation.length; i++)
+  for (size_t i = 0; i < translation.length(); i++)
   {
-    if (translation[i]=='.')
+    if (translation[i] == '.')
     {
       /*Code for short beep*/
-    }else
+    } else
     {
       /*Code for long beep*/
     }
@@ -111,5 +110,3 @@ void SetDictionary()
   Dicitonary['y'] = "_.__";
   Dicitonary['z'] = "__..";
 }
-
-  
