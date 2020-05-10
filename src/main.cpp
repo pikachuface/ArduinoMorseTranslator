@@ -20,7 +20,7 @@ bool qwertzEnabled = true;
 //Pin for the buzzer
 const int BuzzerPin = 4;
 const int frequency = 445; // in Hz
-const int oneDotDuration = 250; // in ms
+const int oneDotDuration = 400; // in ms
 
 
 //Queue filled with chars for the translation
@@ -31,7 +31,7 @@ std::map<char, std::string> Dicitonary;
 //Runs at the boot time
 void setup()
 {
-  delay(500);
+  delay(2000);
   SetDictionary();
   //Sets up the interrupt method for input
   attachInterrupt(digitalPinToInterrupt(DataPin), InputInterupt, CHANGE);
@@ -86,7 +86,7 @@ char KeyboardLayoutApply(char input)
       return 'z';
     }
   }
-  else return input;
+  return input;
 }
 
 
@@ -108,12 +108,16 @@ void SoundOutput(std::string translation)
     if (translation[i] == '.')
     {
       //Short beep
-      tone(BuzzerPin,frequency,oneDotDuration);
+      tone(BuzzerPin,frequency);
+      delay(oneDotDuration);
+      noTone(BuzzerPin);
       delay(oneDotDuration);
     } else
     {
       //Long beep
-      tone(BuzzerPin,frequency,oneDotDuration*3);
+      tone(BuzzerPin,frequency);
+      delay(oneDotDuration*3);
+      noTone(BuzzerPin);
       delay(oneDotDuration);
     }
   }
