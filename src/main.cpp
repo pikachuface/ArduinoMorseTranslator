@@ -1,36 +1,55 @@
-#include<Arduino.h>
-#include <ArduinoSTL.h>
-#include <PS2Keyboard.h>
+#include<Arduino.h> //Lib for the Plaform.io
+#include <PS2Keyboard.h> //Lib for the PS2 keyboard
+
+//////C++ standard library
+#include <ArduinoSTL.h> 
 #include<vector>
 #include<string>
 #include<map>
+///////
 
-
+//Pins for the PS2 keyboard
 const int DataPin = 3;
 const int IRQpin =  5;
 
 PS2Keyboard keyboard;
 
-std::vector<char> inputQueue;
+//Switches between qwertz(true) and qwerty(false) layouts
+bool qwertzEnabled = true;
 
+//Pin for the buzzer
+const int BuzzerPin = 4;
+const int frequency = 445; // in Hz
+const int oneDotDuration = 250; // in ms
+
+
+//Queue filled with chars for the translation
+std::vector<char> inputQueue;
+//Dictonary with the char -> morse covertion
 std::map<char, std::string> Dicitonary;
 
-
+//Runs at the boot time
 void setup()
 {
+  delay(500);
   SetDictionary();
-  delay(1000);
+  //Sets up the interrupt method for input
   attachInterrupt(digitalPinToInterrupt(DataPin), InputInterupt, CHANGE);
+  //Start keyBoard
   keyboard.begin(DataPin, IRQpin);
+  //assigns the buzzer pin
+  pinMode(BuzzerPin, OUTPUT);
+  //starts the serial port
   Serial.begin(9600);
 }
 
+//Always repets itself
 void loop()
 {
   delay(20);
   if (inputQueue.size() > 0)
   {
-    char toTranslateChar = inputQueue[0];
+    char toTranslateChar = KeyboardLayoutApply(inputQueue[0]);
     std::string outputMorse = TranslateToMorse(toTranslateChar);
     SerialOutput(toTranslateChar, outputMorse);
     SoundOutput(outputMorse);
@@ -39,7 +58,7 @@ void loop()
 }
 
 
-
+//Method which is called when keyboard is pressed (called by the Interrupt method)
 void InputInterupt()
 {
   if (keyboard.available())
@@ -48,14 +67,30 @@ void InputInterupt()
   }
 }
 
-
+//Translates char into morse code
 std::string TranslateToMorse(char input)
-{
+{ 
   return Dicitonary[input];
 }
 
+//changes char depending on layout
+char KeyboardLayoutApply(char input)
+{
+  if (qwertzEnabled)
+  {
+    switch (input)
+    {
+    case 'z':
+      return 'y';
+    case 'y':
+      return 'z';
+    }
+  }
+  else return input;
+}
 
 
+//Output method for Serial port
 void SerialOutput(char currentChar, std::string translation)
 {
   Serial.print("Char: ");
@@ -65,24 +100,30 @@ void SerialOutput(char currentChar, std::string translation)
   Serial.println();
 }
 
+//Output method for the buzzer
 void SoundOutput(std::string translation)
 {
   for (size_t i = 0; i < translation.length(); i++)
   {
     if (translation[i] == '.')
     {
-      /*Code for short beep*/
+      //Short beep
+      tone(BuzzerPin,frequency,oneDotDuration);
+      delay(oneDotDuration);
     } else
     {
-      /*Code for long beep*/
+      //Long beep
+      tone(BuzzerPin,frequency,oneDotDuration*3);
+      delay(oneDotDuration);
     }
   }
+  delay(oneDotDuration*3);
 }
 
 
 
 
-
+//Sets up the Dictionary
 void SetDictionary()
 {
   Dicitonary['a'] = "._";
