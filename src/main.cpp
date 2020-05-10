@@ -96,32 +96,25 @@ void SerialOutput(char currentChar, std::string translation)
   Serial.print("Char: ");
   Serial.print(currentChar);
   Serial.print(" Translation: ");
-  Serial.print(translation.c_str());
-  Serial.println();
+  Serial.println(translation.c_str());
 }
 
 //Output method for the buzzer
 void SoundOutput(std::string translation)
 {
+  //Loop that goes trough all of the lines and dots in the translation(string)
   for (size_t i = 0; i < translation.length(); i++)
   {
-    if (translation[i] == '.')
-    {
-      //Short beep
-      tone(BuzzerPin,frequency);
-      delay(oneDotDuration);
-      noTone(BuzzerPin);
-      delay(oneDotDuration);
-    } else
-    {
-      //Long beep
-      tone(BuzzerPin,frequency);
-      delay(oneDotDuration*3);
-      noTone(BuzzerPin);
-      delay(oneDotDuration);
-    }
+    tone(BuzzerPin,frequency); //Starts beep
+
+    //Decides how long the beep should be
+    if (translation[i] == '.') delay(oneDotDuration); //Short beep
+    else delay(oneDotDuration*3); //Long beep
+    
+    noTone(BuzzerPin); //Ends the beep
+    delay(oneDotDuration); //Space between beeps
   }
-  delay(oneDotDuration*3);
+  delay(oneDotDuration*3); //Space between chars
 }
 
 
