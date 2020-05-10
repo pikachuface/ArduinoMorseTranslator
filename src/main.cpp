@@ -1,5 +1,7 @@
+#include<Arduino.h>
 #include <ArduinoSTL.h>
 #include <PS2Keyboard.h>
+#include<vector>
 #include<string>
 #include<map>
 
