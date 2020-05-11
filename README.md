@@ -1,8 +1,10 @@
 # Realtime morse translator from PS2 keyboard input for Arduino. 
 ![image](preview.png)
-## Needed libraries are bundeled with this realese
+## Needed libraries are:
 + [ArduinoSTL](https://github.com/mike-matera/ArduinoSTL)
 + [PS2Keyboard](https://github.com/PaulStoffregen/PS2Keyboard)
+
+***They are included with all releases!***
 ## When compiling
 It may throw some warnings, but if it will compile, there is no need to worry. The warnings are there because the STL lib is old version which contains ***throw*** keyword which is not used in C++ anymore. 
 
