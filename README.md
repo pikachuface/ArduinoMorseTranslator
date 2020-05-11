@@ -1,4 +1,5 @@
 # Realtime morse translator from PS2 keyboard input for Arduino. 
+![image](preview.png)
 ## Needed libraries are bundeled with this realese
 + [ArduinoSTL](https://github.com/mike-matera/ArduinoSTL)
 + [PS2Keyboard](https://github.com/PaulStoffregen/PS2Keyboard)
