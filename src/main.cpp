@@ -1,5 +1,6 @@
 #include<Arduino.h> //Lib for the Plaform.io
-#include <PS2Keyboard.h> //Lib for the PS2 keyboard
+#include<PS2Keyboard.h> //Lib for the PS2 keyboard#include <LiquidCrystal.h> 
+#include<LiquidCrystal.h> //Lib for the LCD display
 
 //////C++ standard library
 #include <ArduinoSTL.h> 
@@ -15,79 +16,101 @@ const int IRQpin =  5;
 PS2Keyboard keyboard;
 
 //Switches between qwertz(true) and qwerty(false) layouts
-bool qwertzEnabled = true;
+#define QWERTZ true
 
 //Pin for the buzzer
 const int BuzzerPin = 4;
 const int frequency = 445; // in Hz
 const int oneDotDuration = 400; // in ms
 
+//Pins for the LCD display
+const int rs = 12, en = 11, d4 = 7, d5 = 6, d6 = 5, d7 = 4;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+const int LCDwidth = 16, LCDheight = 2;
+const char* BLANK;
+
+//If false the serial port will be closed and the code will be faster
+#define SERIALOUT false
+
 
 //Queue filled with chars for the translation
-std::vector<char> inputQueue;
+std::string inputQueue;
 //Dictonary with the char -> morse covertion
 std::map<char, std::string> Dicitonary;
 
 //Runs at the boot time
 void setup()
 {
-  delay(2000);
-  SetDictionary();
-  //Sets up the interrupt method for input
-  attachInterrupt(digitalPinToInterrupt(DataPin), InputInterupt, CHANGE);
+  lcd.begin(LCDwidth, LCDheight);
+  BootLogo();
+  //Loads the dictionary
+  LoadDictionary();
   //Start keyBoard
   keyboard.begin(DataPin, IRQpin);
   //assigns the buzzer pin
   pinMode(BuzzerPin, OUTPUT);
+  #if SERIALOUT 
   //starts the serial port
   Serial.begin(9600);
+  #endif
+  SetupScreen();
 }
 
 //Always repets itself
 void loop()
 {
-  delay(20);
-  if (inputQueue.size() > 0)
+  delay(5);
+  if(keyboard.available())
   {
-    char toTranslateChar = KeyboardLayoutApply(inputQueue[0]);
-    std::string outputMorse = TranslateToMorse(toTranslateChar);
-    SerialOutput(toTranslateChar, outputMorse);
-    SoundOutput(outputMorse);
-    inputQueue.erase(0);
-  }
-}
-
-
-//Method which is called when keyboard is pressed (called by the Interrupt method)
-void InputInterupt()
-{
-  if (keyboard.available())
-  {
-    inputQueue.push_back(tolower(keyboard.read()));
-  }
-}
-
-//Translates char into morse code
-std::string TranslateToMorse(char input)
-{ 
-  return Dicitonary[input];
-}
-
-//changes char depending on layout
-char KeyboardLayoutApply(char input)
-{
-  if (qwertzEnabled)
-  {
+    char input = keyboard.read();
     switch (input)
     {
-    case 'z':
-      return 'y';
-    case 'y':
-      return 'z';
+    case PS2_BACKSPACE:
+      if(inputQueue.length()>0) inputQueue.erase(inputQueue.length()-1);
+      break;
+    case PS2_ENTER:
+
+      inputQueue.clear();
+      break;
+    default:
+      input = KeyboardLayout(toUpperCase(input));
+      inputQueue+=input;
+      break;
     }
+    ClearRow(1);
+    lcd.setCursor(0,1);
+    const char* toPrint = inputQueue.substr().data();
   }
-  return input;
 }
+
+
+char KeyboardLayout(char input)
+{
+  #if QWERTZ //Prepocesor for keyboard layout 
+  switch (input)
+  {
+  case 'Z':
+    return 'Y';
+  case 'Y':
+    return 'Z';
+  }
+  #endif
+  return input;  
+}
+
+
+//Translates char into morse code
+bool TranslateToMorse(char input, std::string& translation)
+{ 
+  if(Dicitonary.find(input)!=Dicitonary.end())
+  {
+    translation = Dicitonary[input];
+    return true;
+  }
+  else return "~";
+}
+
 
 
 //Output method for Serial port
@@ -119,34 +142,101 @@ void SoundOutput(std::string translation)
 
 
 
+void Output(std::string sentence)
+{
+  lcd.clear();
+  lcd.setCursor(0,1);
+  lcd.write(':');
+
+  for (size_t i = 0; i < sentence.length(); i++)
+  {
+    
+    #if SERIALOUT
+    SerialOutput(translated, morse);
+    #endif
+    ClearRow(0);
+    //Loop that goes trough all of the lines and dots in the translation(string)
+    for (size_t i = 0; i < morse.length(); i++)
+    {
+
+      tone(BuzzerPin,frequency); //Starts beep
+
+      //Decides how long the beep should be
+      if (morse[i] == '.') delay(oneDotDuration); //Short beep
+      else delay(oneDotDuration*3); //Long beep
+
+      noTone(BuzzerPin); //Ends the beep
+      delay(oneDotDuration); //Space between beeps
+    }
+    delay(oneDotDuration*3); //Space between chars
+  }
+  
+
+}
+
+
+void ClearRow(int row)
+{
+  lcd.setCursor(0,row);
+  lcd.write(BLANK);
+}
+
+void setBlank()
+{
+  for (size_t i = 0; i < LCDwidth; i++)
+  {
+    BLANK+=' ';
+  }
+}
+
+void BootLogo()
+{
+  lcd.clear();
+  lcd.home();
+  lcd.write("MORSE TRANSLATOR");
+  lcd.setCursor(0,1);
+  lcd.write("  By  Gajdušek");
+  delay(300);
+  lcd.write("   By  Kesner");
+  delay(300);
+}
+
+void SetupScreen()
+{
+  lcd.clear();
+  lcd.write("-----↓INPUT↓----");
+}
+
+
 
 //Sets up the Dictionary
-void SetDictionary()
+void LoadDictionary()
 {
-  Dicitonary['a'] = "._";
-  Dicitonary['b'] = "_...";
-  Dicitonary['c'] = "_._.";
-  Dicitonary['d'] = "_..";
-  Dicitonary['e'] = ".";
-  Dicitonary['f'] = ".._.";
-  Dicitonary['g'] = "__.";
-  Dicitonary['h'] = "....";
-  Dicitonary['i'] = "..";
-  Dicitonary['j'] = ".___";
-  Dicitonary['k'] = "_._";
-  Dicitonary['l'] = "._..";
-  Dicitonary['m'] = "__";
-  Dicitonary['n'] = "_.";
-  Dicitonary['o'] = "___";
-  Dicitonary['p'] = ".__.";
-  Dicitonary['q'] = "__._";
-  Dicitonary['r'] = "._.";
-  Dicitonary['s'] = "...";
-  Dicitonary['t'] = "_";
-  Dicitonary['u'] = ".._";
-  Dicitonary['v'] = "..._";
-  Dicitonary['w'] = ".__";
-  Dicitonary['x'] = "_.._";
-  Dicitonary['y'] = "_.__";
-  Dicitonary['z'] = "__..";
+  Dicitonary['A'] = "._";
+  Dicitonary['B'] = "_...";
+  Dicitonary['C'] = "_._.";
+  Dicitonary['D'] = "_..";
+  Dicitonary['E'] = ".";
+  Dicitonary['F'] = ".._.";
+  Dicitonary['G'] = "__.";
+  Dicitonary['H'] = "....";
+  Dicitonary['I'] = "..";
+  Dicitonary['J'] = ".___";
+  Dicitonary['K'] = "_._";
+  Dicitonary['L'] = "._..";
+  Dicitonary['M'] = "__";
+  Dicitonary['N'] = "_.";
+  Dicitonary['O'] = "___";
+  Dicitonary['P'] = ".__.";
+  Dicitonary['Q'] = "__._";
+  Dicitonary['R'] = "._.";
+  Dicitonary['S'] = "...";
+  Dicitonary['T'] = "_";
+  Dicitonary['U'] = ".._";
+  Dicitonary['V'] = "..._";
+  Dicitonary['W'] = ".__";
+  Dicitonary['X'] = "_.._";
+  Dicitonary['Y'] = "_.__";
+  Dicitonary['Z'] = "__..";
 }
+
