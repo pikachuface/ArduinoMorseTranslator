@@ -85,7 +85,14 @@ void loop()
     }
     ClearRow(1);
     lcd.setCursor(0, 1);
-    const char *toPrint = inputQueue.substr().data();
+    
+    const char *toPrint;
+    if (inputQueue.length()>LCDwidth)
+      toPrint = inputQueue.substr(inputQueue.length()-LCDwidth-1).data();
+    else 
+      toPrint = inputQueue.data();
+
+    lcd.write(toPrint);
   }
 }
 
