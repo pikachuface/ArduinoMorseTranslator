@@ -1,17 +1,17 @@
-#include<Arduino.h> //Lib for the Plaform.io
-#include<PS2Keyboard.h> //Lib for the PS2 keyboard#include <LiquidCrystal.h> 
-#include<LiquidCrystal.h> //Lib for the LCD display
+#include <Arduino.h>       //Lib for the Plaform.io
+#include <PS2Keyboard.h>   //Lib for the PS2 keyboard#include <LiquidCrystal.h>
+#include <LiquidCrystal.h> //Lib for the LCD display
 
 //////C++ standard library
-#include <ArduinoSTL.h> 
-#include<vector>
-#include<string>
-#include<map>
+#include <ArduinoSTL.h>
+#include <vector>
+#include <string>
+#include <map>
 ///////
 
 //Pins for the PS2 keyboard
 const int DataPin = 3;
-const int IRQpin =  5;
+const int IRQpin = 5;
 
 PS2Keyboard keyboard;
 
@@ -20,7 +20,7 @@ PS2Keyboard keyboard;
 
 //Pin for the buzzer
 const int BuzzerPin = 4;
-const int frequency = 445; // in Hz
+const int frequency = 445;      // in Hz
 const int oneDotDuration = 400; // in ms
 
 //Pins for the LCD display
@@ -28,11 +28,11 @@ const int rs = 12, en = 11, d4 = 7, d5 = 6, d6 = 5, d7 = 4;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 const int LCDwidth = 16, LCDheight = 2;
-const char* BLANK;
+const char *BLANK;
+const char *inputGraphics;
 
 //If false the serial port will be closed and the code will be faster
 #define SERIALOUT false
-
 
 //Queue filled with chars for the translation
 std::string inputQueue;
@@ -46,48 +46,52 @@ void setup()
   BootLogo();
   //Loads the dictionary
   LoadDictionary();
+  //Calibrates graphic
+  CalibrateScreen();
   //Start keyBoard
   keyboard.begin(DataPin, IRQpin);
   //assigns the buzzer pin
   pinMode(BuzzerPin, OUTPUT);
-  #if SERIALOUT 
+#if SERIALOUT
   //starts the serial port
   Serial.begin(9600);
-  #endif
-  SetupScreen();
+#endif
 }
 
-//Always repets itself
+//Always repeats itself
 void loop()
 {
   delay(5);
-  if(keyboard.available())
+  if (keyboard.available())
   {
     char input = keyboard.read();
     switch (input)
     {
     case PS2_BACKSPACE:
-      if(inputQueue.length()>0) inputQueue.erase(inputQueue.length()-1);
+      if (inputQueue.length() > 0)
+        inputQueue.erase(inputQueue.length() - 1);
       break;
     case PS2_ENTER:
-
+      Output();
       inputQueue.clear();
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.write(inputGraphics);
       break;
     default:
       input = KeyboardLayout(toUpperCase(input));
-      inputQueue+=input;
+      inputQueue += input;
       break;
     }
     ClearRow(1);
-    lcd.setCursor(0,1);
-    const char* toPrint = inputQueue.substr().data();
+    lcd.setCursor(0, 1);
+    const char *toPrint = inputQueue.substr().data();
   }
 }
 
-
 char KeyboardLayout(char input)
 {
-  #if QWERTZ //Prepocesor for keyboard layout 
+#if QWERTZ //Prepocesor for keyboard layout
   switch (input)
   {
   case 'Z':
@@ -95,23 +99,20 @@ char KeyboardLayout(char input)
   case 'Y':
     return 'Z';
   }
-  #endif
-  return input;  
+#endif
+  return input;
 }
-
 
 //Translates char into morse code
-bool TranslateToMorse(char input, std::string& translation)
-{ 
-  if(Dicitonary.find(input)!=Dicitonary.end())
+std::string TranslateToMorse(char input)
+{
+  if (Dicitonary.find(input) != Dicitonary.end())
   {
-    translation = Dicitonary[input];
-    return true;
+    return Dicitonary[input];
   }
-  else return "~";
+  else
+    return "~";
 }
-
-
 
 //Output method for Serial port
 void SerialOutput(char currentChar, std::string translation)
@@ -123,90 +124,90 @@ void SerialOutput(char currentChar, std::string translation)
 }
 
 //Output method for the buzzer
-void SoundOutput(std::string translation)
+void SoundOutput(int length, int frequency)
 {
-  //Loop that goes trough all of the lines and dots in the translation(string)
-  for (size_t i = 0; i < translation.length(); i++)
-  {
-    tone(BuzzerPin,frequency); //Starts beep
-
-    //Decides how long the beep should be
-    if (translation[i] == '.') delay(oneDotDuration); //Short beep
-    else delay(oneDotDuration*3); //Long beep
-    
-    noTone(BuzzerPin); //Ends the beep
-    delay(oneDotDuration); //Space between beeps
-  }
-  delay(oneDotDuration*3); //Space between chars
+  tone(BuzzerPin, frequency);     //Starts beep
+  delay(oneDotDuration * length); //Space between beeps
+  noTone(BuzzerPin);              //Ends the beep
 }
 
-
-
-void Output(std::string sentence)
+void VisualOutput(int index, const char *morse)
 {
   lcd.clear();
-  lcd.setCursor(0,1);
-  lcd.write(':');
-
-  for (size_t i = 0; i < sentence.length(); i++)
-  {
-    
-    #if SERIALOUT
-    SerialOutput(translated, morse);
-    #endif
-    ClearRow(0);
-    //Loop that goes trough all of the lines and dots in the translation(string)
-    for (size_t i = 0; i < morse.length(); i++)
-    {
-
-      tone(BuzzerPin,frequency); //Starts beep
-
-      //Decides how long the beep should be
-      if (morse[i] == '.') delay(oneDotDuration); //Short beep
-      else delay(oneDotDuration*3); //Long beep
-
-      noTone(BuzzerPin); //Ends the beep
-      delay(oneDotDuration); //Space between beeps
-    }
-    delay(oneDotDuration*3); //Space between chars
-  }
-  
-
+  lcd.setCursor(0, 0);
+  lcd.write(inputQueue[index] + ":");
+  lcd.write(morse);
+  if (inputQueue.length() - index > 8)
+    lcd.write(inputQueue.substr(index, LCDwidth).data());
+  else
+    lcd.write(inputQueue.substr(index).data());
 }
 
+void Output()
+{
+  //Loop that goes trough all the letters
+  for (size_t i = 0; i < inputQueue.length(); i++)
+  {
+    std::string morse = TranslateToMorse(inputQueue[i]);
+#if SERIALOUT
+    SerialOutput(translated, morse);
+#endif
+    ////Sound and Visual output
+    if (morse == "SPACE")
+    {
+      VisualOutput(i, "SPACE");
+      SoundOutput(6, frequency);
+    }
+    else if (morse == "~")
+    {
+      VisualOutput(i, "ERROR");
+      SoundOutput(6, 200);
+    }
+    else
+    {
+      //Loop that goes trough all of the lines and dots in the translation(string)
+      for (int morseIndex = 0; i < morse.length(); i++)
+      {
+        //Decides how long the beep should be
+        if (inputQueue[i] == '.')
+          delay(oneDotDuration); //Short beep
+        else
+          delay(oneDotDuration * 3); //Long beep
+        noTone(BuzzerPin);           //Ends the beep
+        delay(oneDotDuration);       //Space between beeps
+      }
+      delay(oneDotDuration * 3); //Space between chars
+    }
+  }
+}
 
 void ClearRow(int row)
 {
-  lcd.setCursor(0,row);
+  lcd.setCursor(0, row);
   lcd.write(BLANK);
 }
 
-void setBlank()
+void CalibrateScreen()
 {
-  for (size_t i = 0; i < LCDwidth; i++)
-  {
-    BLANK+=' ';
-  }
+  std::string tempBLANK(LCDwidth,' ');
+  BLANK = tempBLANK.data();
+  std::string tempGraphics(LCDwidth,'-');
+  tempGraphics.replace(LCDwidth/2,7,"↓INPUT↓");
+  inputGraphics = tempGraphics.data(); 
 }
+
 
 void BootLogo()
 {
   lcd.clear();
   lcd.home();
   lcd.write("MORSE TRANSLATOR");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0, 1);
   lcd.write("  By  Gajdušek");
   delay(300);
   lcd.write("   By  Kesner");
   delay(300);
 }
-
-void SetupScreen()
-{
-  lcd.clear();
-  lcd.write("-----↓INPUT↓----");
-}
-
 
 
 //Sets up the Dictionary
@@ -238,5 +239,5 @@ void LoadDictionary()
   Dicitonary['X'] = "_.._";
   Dicitonary['Y'] = "_.__";
   Dicitonary['Z'] = "__..";
+  Dicitonary[' '] = "SPACE";
 }
-
