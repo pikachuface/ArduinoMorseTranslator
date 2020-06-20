@@ -75,7 +75,7 @@ void loop()
       Output();
       inputQueue.clear();
       lcd.clear();
-      lcd.setCursor(0,0);
+      lcd.setCursor(0, 0);
       lcd.write(inputGraphics);
       break;
     default:
@@ -165,16 +165,15 @@ void Output()
     }
     else
     {
+      VisualOutput(i, morse.data());
       //Loop that goes trough all of the lines and dots in the translation(string)
       for (int morseIndex = 0; i < morse.length(); i++)
       {
         //Decides how long the beep should be
         if (inputQueue[i] == '.')
-          delay(oneDotDuration); //Short beep
+          SoundOutput(1, frequency);
         else
-          delay(oneDotDuration * 3); //Long beep
-        noTone(BuzzerPin);           //Ends the beep
-        delay(oneDotDuration);       //Space between beeps
+          SoundOutput(3, frequency);
       }
       delay(oneDotDuration * 3); //Space between chars
     }
@@ -189,13 +188,12 @@ void ClearRow(int row)
 
 void CalibrateScreen()
 {
-  std::string tempBLANK(LCDwidth,' ');
+  std::string tempBLANK(LCDwidth, ' ');
   BLANK = tempBLANK.data();
-  std::string tempGraphics(LCDwidth,'-');
-  tempGraphics.replace(LCDwidth/2,7,"↓INPUT↓");
-  inputGraphics = tempGraphics.data(); 
+  std::string tempGraphics(LCDwidth, '-');
+  tempGraphics.replace(LCDwidth / 2, 7, "↓INPUT↓");
+  inputGraphics = tempGraphics.data();
 }
-
 
 void BootLogo()
 {
@@ -208,7 +206,6 @@ void BootLogo()
   lcd.write("   By  Kesner");
   delay(300);
 }
-
 
 //Sets up the Dictionary
 void LoadDictionary()
